@@ -197,11 +197,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // Rest of your existing code...
-  function round(num: number, fractionDigits: number): number {
-    return Number(num);
-  }
-
   return (
     <div className="min-h-screen bg-gray-100">
       <nav className="bg-blue-600 text-white p-4 shadow-lg flex justify-between items-center">
