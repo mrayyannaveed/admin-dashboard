@@ -1,10 +1,12 @@
 "use client";
 
-import ProtectedRoute from "@/app/components/protectedRoute";
 import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
+import { SignedIn, SignOutButton, useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
+
 
 interface Order {
   _id: string;
@@ -28,6 +30,7 @@ interface Product {
   price: number;
   stock: number;
   description?: string;
+  image?: string;
 }
 
 const AdminDashboard = () => {
@@ -37,46 +40,74 @@ const AdminDashboard = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [filter, setFilter] = useState("All");
   const [activeSection, setActiveSection] = useState<"orders" | "products">("orders");
+  const [isEditing, setIsEditing] = useState(false);
+  const [newProduct, setNewProduct] = useState<Product>({
+    _id: "",
+    name: "",
+    price: 0,
+    stock: 0,
+    description: "",
+    image: ""
+  });
+
+  const { user, isSignedIn, isLoaded } = useUser();
+  const router = useRouter();
+  const [isUserLoaded, setIsUserLoaded] = useState(false);
+
+  // Calculate dashboard stats
+  const totalEarnings = orders.reduce((sum, order) => sum + order.total, 0);
+  const totalOrders = orders.length;
+  const pendingOrders = orders.filter(order => order.status === "pending").length;
+  const dispatchOrders = orders.filter(order => order.status === "dispatch").length;
+  const successOrders = orders.filter(order => order.status === "success").length;
 
   useEffect(() => {
+    if (!isLoaded) return;
+
+    if (!isSignedIn) {
+      router.push("/");
+    } else if (user?.primaryEmailAddress?.emailAddress !== "rayyannaveed33@gmail.com") {
+      router.replace("/");
+    } else {
+      setIsUserLoaded(true);
+    }
+  }, [isSignedIn, user, isLoaded, router]);
+
+  useEffect(() => {
+    if (!isUserLoaded) return;
+
     client
-      .fetch(
-        `*[_type == "order"]{
-          _id,
-          firstName,
-          lastName,
-          phone,
-          email,
-          address,
-          city,
-          zipCode,
-          total,
-          discount,
-          orderDate,
-          status,
-          cartItems[]->{
-            name,
-            image
-          }
-        }`
-      )
+      .fetch(`*[_type == "order"]{ _id, firstName, lastName, phone, email, address, city, zipCode, total, discount, orderDate, status, cartItems[]->{ name, image } }`)
       .then((data) => setOrders(data))
       .catch((error) => console.log("error fetching orders", error));
 
     client
-      .fetch(
-        `*[_type == "product"]{
-          _id,
-          name,
-          price,
-          stock,
-          description
-        }`
-      )
+      .fetch(`*[_type == "product"]{ _id, name, price, stock, description, image }`)
       .then((data) => setProducts(data))
       .catch((error) => console.log("error fetching products", error));
-  }, []);
+  }, [isUserLoaded]);
 
+  const handleAddProduct = async () => {
+    try {
+      const doc = {
+        _type: 'product',
+        name: newProduct.name,
+        price: Number(newProduct.price),
+        stock: Number(newProduct.stock),
+        description: newProduct.description,
+        image: newProduct.image
+      };
+
+      const result = await client.create(doc);
+      setProducts([...products, {...newProduct, _id: result._id}]);
+      setNewProduct({_id: "", name: "", price: 0, stock: 0, description: "", image: ""});
+      Swal.fire("Success!", "Product added successfully.", "success");
+    } catch (error) {
+      Swal.fire("Error!", "Failed to add product.", "error");
+      console.log(error);
+    }
+  };
+  
   const filteredOrders =
     filter === "All" ? orders : orders.filter((order) => order.status === filter);
 
@@ -143,35 +174,93 @@ const AdminDashboard = () => {
       console.log(error)
     }
   };
+  const handleEditProduct = async (product: Product) => {
+    try {
+      await client
+        .patch(product._id)
+        .set({
+          name: product.name,
+          price: Number(product.price),
+          stock: Number(product.stock),
+          description: product.description,
+          image: product.image
+        })
+        .commit();
+
+      setProducts(products.map(p => p._id === product._id ? product : p));
+      setSelectedProduct(null);
+      setIsEditing(false);
+      Swal.fire("Success!", "Product updated successfully.", "success");
+    } catch (error) {
+      Swal.fire("Error!", "Failed to update product.", "error");
+      console.log(error);
+    }
+  };
+
+  // Rest of your existing code...
+  function round(num: number, fractionDigits: number): number {
+    return Number(num);
+  }
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-gray-100">
-        {/* Navbar */}
-        <nav className="bg-red-600 text-white p-4 shadow-lg flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setActiveSection("orders")}
-              className={`px-4 py-2 rounded font-semibold cursor-pointer ${
-                activeSection === "orders" ? "bg-blue-500" : "bg-red-700 hover:bg-red-500"
-              }`}
-            >
-              Orders
-            </button>
-            <button
-              onClick={() => setActiveSection("products")}
-              className={`px-4 py-2 rounded font-semibold cursor-pointer ${
-                activeSection === "products" ? "bg-blue-500" : "bg-red-700 hover:bg-red-500"
-              }`}
-            >
-              Products
-            </button>
-          </div>
-        </nav>
+    <div className="min-h-screen bg-gray-100">
+      <nav className="bg-blue-600 text-white p-4 shadow-lg flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setActiveSection("orders")}
+            className={`px-4 py-2 rounded font-semibold cursor-pointer ${
+              activeSection === "orders" ? "bg-red-500" : "bg-blue-700 hover:bg-blue-500"
+            }`}
+          >
+            Orders
+          </button>
+          <button
+            onClick={() => setActiveSection("products")}
+            className={`px-4 py-2 rounded font-semibold cursor-pointer ${
+              activeSection === "products" ? "bg-red-500" : "bg-blue-700 hover:bg-blue-500"
+            }`}
+          >
+            Products
+          </button>
+          <SignedIn>
+            <SignOutButton>
+              <button className="bg-black text-white px-4 py-2 rounded-md cursor-pointer hover:bg-red-400">
+                Logout
+              </button>
+            </SignOutButton>
+          </SignedIn>
+        </div>
+      </nav>
 
-        <div className="p-6">
-          {activeSection === "orders" && (
+      <div className="p-6">
+        {activeSection === "orders" && (
+          <>
+            {/* Dashboard Stats */}
+            <div className="grid grid-cols-5 gap-4 mb-6">
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h3 className="text-lg font-semibold text-gray-700">Total Earnings</h3>
+                <p className="text-2xl font-bold text-green-600">${totalEarnings}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h3 className="text-lg font-semibold text-gray-700">Total Orders</h3>
+                <p className="text-2xl font-bold text-blue-600">{totalOrders}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h3 className="text-lg font-semibold text-gray-700">Pending Orders</h3>
+                <p className="text-2xl font-bold text-yellow-600">{pendingOrders}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h3 className="text-lg font-semibold text-gray-700">Dispatch Orders</h3>
+                <p className="text-2xl font-bold text-orange-600">{dispatchOrders}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h3 className="text-lg font-semibold text-gray-700">Success Orders</h3>
+                <p className="text-2xl font-bold text-green-600">{successOrders}</p>
+              </div>
+            </div>
+
+             {activeSection === "orders" && (
             <>
               <div className="mb-4 space-x-2">
                 {["All", "pending", "success", "dispatch"].map((status) => (
@@ -269,76 +358,169 @@ const AdminDashboard = () => {
             </>
           )}
 
-          {/* Products Section */}
-          {activeSection === "products" && (
-            <>
-              <h2 className="text-xl font-semibold mb-2">Products</h2>
-              <table className="w-full border mt-2 bg-white shadow rounded">
-                <thead>
-                  <tr>
-                    <th className="border p-2">Name</th>
-                    <th className="border p-2">Price</th>
-                    <th className="border p-2">Stock</th>
-                    <th className="border p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map((product) => (
-                    <tr key={product._id} className="hover:bg-gray-100">
-                      <td className="border p-2">{product.name}</td>
-                      <td className="border p-2">${product.price}</td>
-                      <td className="border p-2">{product.stock}</td>
-                      <td className="border p-2">
-                        <button
-                          onClick={() => setSelectedProduct(product)}
-                          className="bg-blue-500 text-white px-2 py-1 rounded mr-2 cursor-pointer"
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={() => confirmDeleteProduct(product._id)}
-                          className="bg-red-500 text-white px-2 py-1 rounded cursor-pointer"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          </>
+        )}
 
-              {/* Product Details */}
-              {selectedProduct && (
-                <div className="mt-6">
-                  <h2 className="text-xl font-semibold">Product Details</h2>
-                  <div className="bg-gray-100 p-4 rounded mt-2">
-                    <p>
-                      <strong>Name:</strong> {selectedProduct.name}
-                    </p>
-                    <p>
-                      <strong>Price:</strong> ${selectedProduct.price}
-                    </p>
-                    <p>
-                      <strong>Stock:</strong> {selectedProduct.stock}
-                    </p>
-                    <p>
-                      <strong>Description:</strong>{" "}
-                      {selectedProduct.description || "N/A"}
-                    </p>
+        {activeSection === "products" && (
+          <>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold mb-4">Add New Product</h2>
+              <div className="grid grid-cols-3 gap-4 bg-white p-4 rounded-lg shadow">
+                <input
+                  type="text"
+                  placeholder="Product Name"
+                  className="border p-2 rounded"
+                  value={newProduct.name}
+                  onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
+                />
+                <input
+                  type="number"
+                  placeholder="Price"
+                  className="border p-2 rounded"
+                  value={newProduct.price}
+                  onChange={(e) => setNewProduct({...newProduct, price: Number(e.target.value)})}
+                />
+                <input
+                  type="number"
+                  placeholder="Stock"
+                  className="border p-2 rounded"
+                  value={newProduct.stock}
+                  onChange={(e) => setNewProduct({...newProduct, stock: Number(e.target.value)})}
+                />
+                <input
+                  type="text"
+                  placeholder="Image URL"
+                  className="border p-2 rounded"
+                  value={newProduct.image}
+                  onChange={(e) => setNewProduct({...newProduct, image: e.target.value})}
+                />
+                <textarea
+                  placeholder="Description"
+                  className="border p-2 rounded"
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                />
+                <button
+                  onClick={handleAddProduct}
+                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                >
+                  Add Product
+                </button>
+              </div>
+            </div>
+
+            <table className="w-full border mt-2 bg-white shadow rounded">
+              <thead>
+                <tr>
+                  <th className="border p-2">Image</th>
+                  <th className="border p-2">Name</th>
+                  <th className="border p-2">Price</th>
+                  <th className="border p-2">Stock</th>
+                  <th className="border p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((product) => (
+                  <tr key={product._id} className="hover:bg-gray-100">
+                    <td className="border p-2">
+                      {product.image && (
+                        <img
+                          src={urlFor(product.image).url()}
+                          alt={product.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      )}
+                    </td>
+                    <td className="border p-2">{product.name}</td>
+                    <td className="border p-2">${product.price}</td>
+                    <td className="border p-2">{product.stock}</td>
+                    <td className="border p-2">
+                      <button
+                        onClick={() => {
+                          setSelectedProduct(product);
+                          setIsEditing(true);
+                        }}
+                        className="bg-blue-500 text-white px-2 py-1 rounded mr-2"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => confirmDeleteProduct(product._id)}
+                        className="bg-red-500 text-white px-2 py-1 rounded"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Edit Product Modal */}
+            {isEditing && selectedProduct && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <div className="bg-white p-6 rounded-lg w-1/2">
+                  <h2 className="text-xl font-semibold mb-4">Edit Product</h2>
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      placeholder="Product Name"
+                      className="w-full border p-2 rounded"
+                      value={selectedProduct.name}
+                      onChange={(e) => setSelectedProduct({...selectedProduct, name: e.target.value})}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Price"
+                      className="w-full border p-2 rounded"
+                      value={selectedProduct.price}
+                      onChange={(e) => setSelectedProduct({...selectedProduct, price: Number(e.target.value)})}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Stock"
+                      className="w-full border p-2 rounded"
+                      value={selectedProduct.stock}
+                      onChange={(e) => setSelectedProduct({...selectedProduct, stock: Number(e.target.value)})}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Image URL"
+                      className="w-full border p-2 rounded"
+                      value={selectedProduct.image}
+                      onChange={(e) => setSelectedProduct({...selectedProduct, image: e.target.value})}
+                    />
+                    <textarea
+                      placeholder="Description"
+                      className="w-full border p-2 rounded"
+                      value={selectedProduct.description}
+                      onChange={(e) => setSelectedProduct({...selectedProduct, description: e.target.value})}
+                    />
+                    <div className="flex justify-end space-x-2">
+                      <button
+                        onClick={() => {
+                          setSelectedProduct(null);
+                          setIsEditing(false);
+                        }}
+                        className="bg-gray-500 text-white px-4 py-2 rounded"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleEditProduct(selectedProduct)}
+                        className="bg-blue-500 text-white px-4 py-2 rounded"
+                      >
+                        Save Changes
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setSelectedProduct(null)}
-                    className="bg-gray-500 px-2 py-1 ml-10 rounded mt-2 cursor-pointer text-white"
-                  >
-                    Close
-                  </button>
                 </div>
-              )}
-            </>
-          )}
-        </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
-    </ProtectedRoute>
+    </div>
   );
 };
 
