@@ -1,12 +1,13 @@
+
 "use client";
 
 import { client } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
 import { SignedIn, SignOutButton, useUser } from "@clerk/nextjs";
+import { round } from "lodash";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
-
 
 interface Order {
   _id: string;
@@ -55,7 +56,7 @@ const AdminDashboard = () => {
   const [isUserLoaded, setIsUserLoaded] = useState(false);
 
   // Calculate dashboard stats
-  const totalEarnings = orders.reduce((sum, order) => sum + order.total, 0);
+  const totalEarnings = orders.reduce((sum, order) => sum + round(order.total, 2), 0);
   const totalOrders = orders.length;
   const pendingOrders = orders.filter(order => order.status === "pending").length;
   const dispatchOrders = orders.filter(order => order.status === "dispatch").length;
@@ -117,13 +118,13 @@ const AdminDashboard = () => {
 
   const handleDelete = async (orderId: string) => {
     const result = await Swal.fire({
-      title: "Are you sure?",
+      title: "Are you sure?", 
       text: "You won't be able to revert this!",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, delete it!",
+      confirmButtonText: "Yes, delete it!"
     });
     if (!result.isConfirmed) return;
 
@@ -156,11 +157,11 @@ const AdminDashboard = () => {
     const result = await Swal.fire({
       title: "Are you sure?",
       text: "This product will be deleted!",
-      icon: "warning",
+      icon: "warning", 
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, delete it!",
+      confirmButtonText: "Yes, delete it!"
     });
 
     if (!result.isConfirmed) return;
@@ -174,6 +175,7 @@ const AdminDashboard = () => {
       console.log(error)
     }
   };
+
   const handleEditProduct = async (product: Product) => {
     try {
       await client
@@ -198,29 +200,33 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-blue-600 text-white p-4 shadow-lg flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <div className="flex space-x-2">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <nav className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6 shadow-xl flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+        <div className="flex space-x-4">
           <button
             onClick={() => setActiveSection("orders")}
-            className={`px-4 py-2 rounded font-semibold cursor-pointer ${
-              activeSection === "orders" ? "bg-red-500" : "bg-blue-700 hover:bg-blue-500"
+            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 cursor-pointer ${
+              activeSection === "orders" 
+                ? "bg-white text-blue-600 shadow-lg transform scale-105" 
+                : "bg-blue-700 hover:bg-blue-600"
             }`}
           >
             Orders
           </button>
           <button
             onClick={() => setActiveSection("products")}
-            className={`px-4 py-2 rounded font-semibold cursor-pointer ${
-              activeSection === "products" ? "bg-red-500" : "bg-blue-700 hover:bg-blue-500"
+            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 cursor-pointer ${
+              activeSection === "products"
+                ? "bg-white text-blue-600 shadow-lg transform scale-105"
+                : "bg-blue-700 hover:bg-blue-600"
             }`}
           >
             Products
           </button>
           <SignedIn>
             <SignOutButton>
-              <button className="bg-black text-white px-4 py-2 rounded-md cursor-pointer hover:bg-red-400">
+              <button className="bg-red-500 cursor-pointer hover:bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl">
                 Logout
               </button>
             </SignOutButton>
@@ -228,282 +234,286 @@ const AdminDashboard = () => {
         </div>
       </nav>
 
-      <div className="p-6">
+      <div className="p-8">
         {activeSection === "orders" && (
           <>
-            {/* Dashboard Stats */}
-            <div className="grid grid-cols-5 gap-4 mb-6">
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-700">Total Earnings</h3>
-                <p className="text-2xl font-bold text-green-600">${totalEarnings}</p>
+            <div className="grid grid-cols-5 gap-6 mb-8">
+              <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200">
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Total Earnings</h3>
+                <p className="text-3xl font-bold text-green-600">${totalEarnings.toLocaleString()}</p>
               </div>
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-700">Total Orders</h3>
-                <p className="text-2xl font-bold text-blue-600">{totalOrders}</p>
+              <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200">
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Total Orders</h3>
+                <p className="text-3xl font-bold text-blue-600">{totalOrders}</p>
               </div>
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-700">Pending Orders</h3>
-                <p className="text-2xl font-bold text-yellow-600">{pendingOrders}</p>
+              <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200">
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Pending Orders</h3>
+                <p className="text-3xl font-bold text-yellow-600">{pendingOrders}</p>
               </div>
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-700">Dispatch Orders</h3>
-                <p className="text-2xl font-bold text-orange-600">{dispatchOrders}</p>
+              <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200">
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Dispatch Orders</h3>
+                <p className="text-3xl font-bold text-orange-600">{dispatchOrders}</p>
               </div>
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-700">Success Orders</h3>
-                <p className="text-2xl font-bold text-green-600">{successOrders}</p>
+              <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200">
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Success Orders</h3>
+                <p className="text-3xl font-bold text-green-600">{successOrders}</p>
               </div>
             </div>
 
-             {activeSection === "orders" && (
-            <>
-              <div className="mb-4 space-x-2">
-                {["All", "pending", "success", "dispatch"].map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => setFilter(status)}
-                    className={`px-4 py-2 rounded-md font-semibold cursor-pointer ${
-                      filter === status
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200 hover:bg-gray-300"
-                    }`}
-                  >
-                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                  </button>
-                ))}
+            <div className="mb-6 space-x-4">
+              {["All", "pending", "success", "dispatch"].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setFilter(status)}
+                  className={`px-6 py-3 cursor-pointer rounded-lg font-semibold transition-all duration-200 ${
+                    filter === status
+                      ? "bg-blue-600 text-white shadow-lg transform scale-105"
+                      : "bg-white text-gray-700 hover:bg-gray-50 shadow"
+                  }`}
+                >
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {filteredOrders.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-xl text-gray-600">No orders found</p>
               </div>
-
-              {filteredOrders.length === 0 ? (
-                <p className="text-gray-600 text-center">No orders found.</p>
-              ) : (
-                <div className="overflow-auto rounded-lg shadow bg-white">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-100 text-gray-600 uppercase font-medium">
-                      <tr>
-                        <th className="px-4 py-3 ">Name</th>
-                        <th className="px-4 py-3 ">Phone</th>
-                        <th className="px-4 py-3 ">Email</th>
-                        <th className="px-4 py-3 ">Total</th>
-                        <th className="px-4 py-3 ">Status</th>
-                        <th className="px-4 py-3 ">Actions</th>
+            ) : (
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Name</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Phone</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Email</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Total</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Status</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredOrders.map((order) => (
+                      <tr key={order._id} className="hover:bg-gray-50 transition-colors duration-200">
+                        <td className="px-6 py-4">
+                          {order.firstName} {order.lastName}
+                        </td>
+                        <td className="px-6 py-4">{order.phone}</td>
+                        <td className="px-6 py-4">{order.email}</td>
+                        <td className="px-6 py-4 font-semibold text-green-600">
+                          ${order.total}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            order.status === 'dispatch' ? 'bg-blue-100 text-blue-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 space-x-3">
+                          <button
+                            onClick={() => toggleOrderDetails(order._id)}
+                            className="text-blue-600 cursor-pointer hover:text-blue-800 font-medium"
+                          >
+                            {selectedOrderId === order._id ? "Hide" : "Details"}
+                          </button>
+                          <select
+                            value={order.status || ""}
+                            onChange={(e) => handleStatusChange(order._id, e.target.value)}
+                            className="bg-white border cursor-pointer border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="dispatch">Dispatch</option>
+                            <option value="success">Success</option>
+                          </select>
+                          <button
+                            onClick={() => handleDelete(order._id)}
+                            className="text-red-600 cursor-pointer hover:text-red-800 font-medium"
+                          >
+                            Delete
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {filteredOrders.map((order) => (
-                        <tr key={order._id} className="hover:bg-gray-50 transition">
-                          <td className="px-4 py-2">
-                            {order.firstName} {order.lastName}
-                          </td>
-                          <td className="px-4 py-2">{order.phone}</td>
-                          <td className="px-4 py-2">{order.email}</td>
-                          <td className="px-4 py-2 font-semibold text-green-700">
-                            ${order.total}
-                          </td>
-                          <td className="px-4 py-2 capitalize">{order.status}</td>
-                          <td className="px-4 py-2 space-x-2">
-                            <button
-                              onClick={() => toggleOrderDetails(order._id)}
-                              className="text-blue-600 hover:underline cursor-pointer"
-                            >
-                              {selectedOrderId === order._id ? "Hide" : "Details"}
-                            </button>
-                            <select
-                              value={order.status || ""}
-                              onChange={(e) =>
-                                handleStatusChange(order._id, e.target.value)
-                              }
-                              className="bg-gray-100 px-2 py-1 rounded cursor-pointer"
-                            >
-                              <option value="pending">Pending</option>
-                              <option value="dispatch">Dispatch</option>
-                              <option value="success">Success</option>
-                            </select>
-                            <button
-                              onClick={() => handleDelete(order._id)}
-                              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded cursor-pointer"
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-              {/* Order Details */}
-              {selectedOrderId && (
-                <div className="mt-6 p-4 bg-white shadow rounded-lg">
-                  <h2 className="text-lg font-semibold mb-4">Order Details</h2>
+            {selectedOrderId && (
+              <div className="mt-8 bg-white p-6 rounded-xl shadow-lg">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-6">Order Details</h2>
+                <div className="grid grid-cols-4 gap-6">
                   {orders
                     .find((o) => o._id === selectedOrderId)
                     ?.cartItems.map((item, index) => (
-                      <div key={index} className="flex items-center mb-2">
+                      <div key={index} className="flex flex-col items-center p-4 border rounded-lg hover:shadow-md transition-shadow duration-200">
                         <img
                           src={urlFor(item.image).url()}
                           alt={item.name}
-                          className="w-16 h-16 object-cover rounded mr-4"
+                          className="w-24 h-24 object-cover rounded-lg mb-4"
                         />
-                        <span>{item.name}</span>
+                        <span className="text-gray-800 font-medium text-center">{item.name}</span>
                       </div>
                     ))}
                 </div>
-              )}
-            </>
-          )}
-
+              </div>
+            )}
           </>
         )}
 
         {activeSection === "products" && (
           <>
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold mb-4">Add New Product</h2>
-              <div className="grid grid-cols-3 gap-4 bg-white p-4 rounded-lg shadow">
+            <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-6">Add New Product</h2>
+              <div className="grid grid-cols-3 gap-6">
                 <input
                   type="text"
                   placeholder="Product Name"
-                  className="border p-2 rounded"
+                  className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={newProduct.name}
                   onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
                 />
                 <input
                   type="number"
                   placeholder="Price"
-                  className="border p-2 rounded"
+                  className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={newProduct.price}
                   onChange={(e) => setNewProduct({...newProduct, price: Number(e.target.value)})}
                 />
                 <input
                   type="number"
                   placeholder="Stock"
-                  className="border p-2 rounded"
+                  className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={newProduct.stock}
                   onChange={(e) => setNewProduct({...newProduct, stock: Number(e.target.value)})}
                 />
                 <input
                   type="text"
                   placeholder="Image URL"
-                  className="border p-2 rounded"
+                  className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={newProduct.image}
                   onChange={(e) => setNewProduct({...newProduct, image: e.target.value})}
                 />
                 <textarea
                   placeholder="Description"
-                  className="border p-2 rounded"
+                  className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={newProduct.description}
                   onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
                 />
                 <button
                   onClick={handleAddProduct}
-                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                  className="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded-lg transition-colors duration-200"
                 >
                   Add Product
                 </button>
               </div>
             </div>
 
-            <table className="w-full border mt-2 bg-white shadow rounded">
-              <thead>
-                <tr>
-                  <th className="border p-2">Image</th>
-                  <th className="border p-2">Name</th>
-                  <th className="border p-2">Price</th>
-                  <th className="border p-2">Stock</th>
-                  <th className="border p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((product) => (
-                  <tr key={product._id} className="hover:bg-gray-100">
-                    <td className="border p-2">
-                      {product.image && (
-                        <img
-                          src={urlFor(product.image).url()}
-                          alt={product.name}
-                          className="w-16 h-16 object-cover rounded"
-                        />
-                      )}
-                    </td>
-                    <td className="border p-2">{product.name}</td>
-                    <td className="border p-2">${product.price}</td>
-                    <td className="border p-2">{product.stock}</td>
-                    <td className="border p-2">
-                      <button
-                        onClick={() => {
-                          setSelectedProduct(product);
-                          setIsEditing(true);
-                        }}
-                        className="bg-blue-500 text-white px-2 py-1 rounded mr-2"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => confirmDeleteProduct(product._id)}
-                        className="bg-red-500 text-white px-2 py-1 rounded"
-                      >
-                        Delete
-                      </button>
-                    </td>
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Image</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Name</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Price</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Stock</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {products.map((product) => (
+                    <tr key={product._id} className="hover:bg-gray-50 transition-colors duration-200">
+                      <td className="px-6 py-4">
+                        {product.image && (
+                          <img
+                            src={urlFor(product.image).url()}
+                            alt={product.name}
+                            className="w-16 h-16 object-cover rounded-lg"
+                          />
+                        )}
+                      </td>
+                      <td className="px-6 py-4">{product.name}</td>
+                      <td className="px-6 py-4">${product.price}</td>
+                      <td className="px-6 py-4">{product.stock}</td>
+                      <td className="px-6 py-4 space-x-3">
+                        <button
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setIsEditing(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => confirmDeleteProduct(product._id)}
+                          className="text-red-600 hover:text-red-800 font-medium cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-            {/* Edit Product Modal */}
             {isEditing && selectedProduct && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div className="bg-white p-6 rounded-lg w-1/2">
-                  <h2 className="text-xl font-semibold mb-4">Edit Product</h2>
+                <div className="bg-white p-8 rounded-xl w-1/2 max-w-2xl">
+                  <h2 className="text-2xl font-semibold text-gray-800 mb-6">Edit Product</h2>
                   <div className="space-y-4">
                     <input
                       type="text"
                       placeholder="Product Name"
-                      className="w-full border p-2 rounded"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={selectedProduct.name}
                       onChange={(e) => setSelectedProduct({...selectedProduct, name: e.target.value})}
                     />
                     <input
                       type="number"
                       placeholder="Price"
-                      className="w-full border p-2 rounded"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={selectedProduct.price}
                       onChange={(e) => setSelectedProduct({...selectedProduct, price: Number(e.target.value)})}
                     />
                     <input
                       type="number"
                       placeholder="Stock"
-                      className="w-full border p-2 rounded"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={selectedProduct.stock}
                       onChange={(e) => setSelectedProduct({...selectedProduct, stock: Number(e.target.value)})}
                     />
                     <input
                       type="text"
                       placeholder="Image URL"
-                      className="w-full border p-2 rounded"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={selectedProduct.image}
                       onChange={(e) => setSelectedProduct({...selectedProduct, image: e.target.value})}
                     />
                     <textarea
                       placeholder="Description"
-                      className="w-full border p-2 rounded"
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={selectedProduct.description}
                       onChange={(e) => setSelectedProduct({...selectedProduct, description: e.target.value})}
                     />
-                    <div className="flex justify-end space-x-2">
+                    <div className="flex justify-end space-x-4">
                       <button
                         onClick={() => {
                           setSelectedProduct(null);
                           setIsEditing(false);
                         }}
-                        className="bg-gray-500 text-white px-4 py-2 rounded"
+                        className="px-6 py-2 rounded-lg font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors duration-200"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={() => handleEditProduct(selectedProduct)}
-                        className="bg-blue-500 text-white px-4 py-2 rounded"
+                        className="px-6 py-2 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
                       >
                         Save Changes
                       </button>
